@@ -5,28 +5,61 @@ import shutil
 import os
 
 
+def start_download():
+    num_of_pages = int(
+        input('How many pages of cards do you want to download? (30 per page): '))
+    base_url = 'https://2kmtcentral.com/21/players/page/'
+
+    if num_of_pages <= 0:
+        print('Program ended.')
+        return
+
+    get_all_cards('https://2kmtcentral.com/21/players')
+
+    for page_num in range(1, num_of_pages):
+        url = f"https://2kmtcentral.com/21/players/page/{page_num}"
+        get_all_cards(url)
+    
+    print('All cards finished downloading.')
+
+
 def get_all_cards(url):
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, 'html.parser')
-
-
-def get_one_card(url):
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, 'html.parser')
-
-    card_img = soup.select('.image img')[0]
-    card_img_link = card_img['src']
-    filename = card_img_link.split('/players/')[1]
+    player_card_img_links = []
+    player_card_names = []
     save_dir = '2K Cards'
 
-    print('--------')
-    pprint(card_img)
-    pprint(card_img_link)
-    print(filename)
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    card_img_elems = soup.select('td img')
 
-    print(f"Downloading {filename}...")
+    for imgElem in card_img_elems:
+        if imgElem.has_attr('data-full'):
+            card_img_link = imgElem['data-full']
+            player_card_img_links.append(card_img_link)
 
-    r = requests.get(card_img_link, stream=True)
+    name_box_links = soup.select('.name .box-link')
+
+    for name_link in name_box_links:
+        full_link = name_link['href']
+        full_link_arr = full_link.split('/players/')
+
+        for elem in full_link_arr:
+            if not elem.startswith('http'):
+                number = elem.split('/')[0]
+                player_name = elem.split('/')[1]
+                filename = f"{player_name}-{number}.png"
+                player_card_names.append(filename)
+
+    for i in range(len(player_card_names)):
+        filename, img_link = (player_card_names[i], player_card_img_links[i])
+        get_one_card(filename, img_link, save_dir)
+
+
+def get_one_card(filename, img_link, save_dir):
+
+    print(f"Downloading {filename}...", end="")
+
+    r = requests.get(img_link, stream=True)
 
     if r.status_code == 200:
         r.raw.decode_content = True
@@ -35,11 +68,9 @@ def get_one_card(url):
             shutil.copyfileobj(r.raw, f)
 
         shutil.move(filename, save_dir)
-        print(f"{filename} downloaded successfully")
+        print(f"Success!")
     else:
-        print(f"{filename} failed to download")
+        print(f"Failed!")
 
 
-# get_one_card('https://2kdb.net/player/2k20/michael-jordan/9152')
-
-print('ab')
+start_download()
