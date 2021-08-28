@@ -14,19 +14,21 @@ def start_download():
         print('Program ended.')
         return
 
-    get_all_cards('https://2kmtcentral.com/21/players')
+    get_all_cards('https://2kmtcentral.com/21/players', 1)
+    offset = 31
 
     for page_num in range(1, num_of_pages):
         url = f"https://2kmtcentral.com/21/players/page/{page_num}"
-        get_all_cards(url)
-    
+        get_all_cards(url, offset)
+        offset += 30
+
     print('All cards finished downloading.')
 
 
-def get_all_cards(url):
+def get_all_cards(url, offset):
     player_card_img_links = []
     player_card_names = []
-    save_dir = '2K Cards'
+    save_dir = '2K Cards Numbered'
 
     page = requests.get(url)
     soup = BeautifulSoup(page.content, 'html.parser')
@@ -52,7 +54,8 @@ def get_all_cards(url):
 
     for i in range(len(player_card_names)):
         filename, img_link = (player_card_names[i], player_card_img_links[i])
-        get_one_card(filename, img_link, save_dir)
+        get_one_card(f"{str(i + offset).zfill(3)}.png",
+                     img_link, save_dir)
 
 
 def get_one_card(filename, img_link, save_dir):
